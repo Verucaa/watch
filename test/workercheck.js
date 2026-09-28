@@ -59,6 +59,9 @@ const noQ = await call("/api/search");
 const noQBody = await noQ.json();
 assert.equal(noQBody.total, 0, "empty query returns an empty page");
 assert.equal((await call("/api/detail?type=movie")).status, 400, "detail without id is a 400");
+assert.equal((await call("/api/direct?id=")).status, 400, "direct without id is a 400");
+const noS = await call("/api/servers?type=tv&id=1396");
+assert.equal(noS.status, 200, "tv without s/e must not break");
 assert.equal((await call("/api/episodes?id=5&season=abc")).status, 200, "bad season falls back to 1");
 
 console.log("ok - worker routing, method guard, open-proxy guard, validation");

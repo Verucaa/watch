@@ -41,8 +41,14 @@ const HEALTH_TTL = 20 * 60e3;
 export const useHealth = () => useLocal("health", {});
 
 export function markServer(url, ok) {
-    const h = (store.get("health")?.v || {}) || {};
-    h[url] = { ok, t: Date.now() };
+    markServers([[url, ok]]);
+}
+
+/** one write for a whole probe batch -- localStorage is sync and this runs 12x */
+export function markServers(pairs) {
+    if (!pairs?.length) return;
+    const h = { ...(store.get("health")?.v || {}) };
+    for (const [url, ok] of pairs) h[url] = { ok, t: Date.now() };
     store.set("health", h, 0);
 }
 

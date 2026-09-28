@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApi, probe, qs } from "../lib/api.js";
-import { markServer, pushRecent, rankServers, serverState, settings, useHealth } from "../lib/store.js";
+import { markServer, markServers, pushRecent, rankServers, serverState, settings, useHealth } from "../lib/store.js";
 import { store } from "../lib/kv.js";
 import { Icon, ErrorNote, Spinner, cx, toast, useBlockLoader } from "../lib/ui.jsx";
 
@@ -18,9 +18,14 @@ async function loadHls(video) {
 const posKey = (type, id, s, e) => `pos:${type}:${id}:${s || 0}:${e || 0}`;
 
 export default function Watch({ type = "movie", id, params }) {
-    const season = Number(params.s) || null;
-    const episode = Number(params.e) || null;
-    const { data, error, loading } = useApi(`/api/servers?${qs({ type, id, s: season, e: episode })}`, "servers");
+    /* a series with no s/e in the URL would build broken upstream urls */
+    const season = type === "tv" ? Number(params.s) || 1 : null;
+    const episode = type === "tv" ? Number(params.e) || 1 : null;
+    const ep = { type, id, s: season, e: episode };
+
+    /* cold isolate latency for 7reels is 3-25s, so these get their own budget */
+    const { data, error, loading } = useApi(`/api/servers?${qs(ep)}`, "servers", { timeout: 30000 });
+    const directQ = useApi(`/api/direct?${qs(ep)}`, "direct", { timeout: 30000 });
     useBlockLoader(loading && !data, "Mengambil server…");
 
     const [title, setTitle] = useState(`${type === "tv" ? "Series" : "Film"} #${id}`);
@@ -41,9 +46,20 @@ export default function Watch({ type = "movie", id, params }) {
     const currentRef = useRef(null);
     currentRef.current = current;
 
-    const list = data
-        ? [...(data.direct ? [{ label: data.direct.label, quality: "Auto · HD", url: data.direct.url, direct: true }] : []), ...(data.embeds || []).map((e) => ({ label: e.server, quality: e.quality, url: e.url, direct: false }))]
-        : [];
+    const direct = directQ.data?.direct || null;
+    const list = useMemo(
+        () => [
+            ...(data?.embeds || []).map((e) => ({ label: e.server, quality: e.quality, url: e.url, direct: false })),
+            ...(direct ? [{ label: direct.label, quality: direct.quality, url: direct.url, direct: true }] : [])
+        ],
+        [data, direct]
+    );
+
+    /* the player callbacks outlive renders; refs keep failover on the live list */
+    const listRef = useRef(list);
+    listRef.current = list;
+    const healthRef = useRef(health);
+    healthRef.current = health;
 
     /* title + history come from the detail endpoint, cached separately */
     useEffect(() => {
@@ -98,15 +114,17 @@ export default function Watch({ type = "movie", id, params }) {
 
     const next = useCallback(() => {
         stop();
-        if (attempts.current >= list.length) {
+        const all = listRef.current;
+        if (attempts.current >= all.length) {
             setExhausted(true);
             setVeil(null);
             return;
         }
         attempts.current++;
-        const rest = list.filter((s) => s.url !== currentRef.current?.url);
-        play(rankServers(rest.length ? rest : list, health)[0]);
-    }, [list, health, stop]);
+        const rest = all.filter((s) => s.url !== currentRef.current?.url);
+        play(rankServers(rest.length ? rest : all, healthRef.current)[0]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [stop]);
 
     const bail = useCallback(
         (server) => {
@@ -211,26 +229,20 @@ export default function Watch({ type = "movie", id, params }) {
     useEffect(() => {
         if (!list.length) return;
         let alive = true;
-        Promise.all(
-            list.map((s) =>
-                probe(s.url, s.direct ? 8000 : 5000).then((ok) => {
-                    markServer(s.url, ok);
-                    return ok;
-                })
-            )
-        ).then((results) => {
-            if (alive && results.every((x) => !x)) toast("Tidak ada server yang bisa dijangkau", "err");
+        Promise.all(list.map((s) => probe(s.url, s.direct ? 8000 : 5000).then((ok) => [s.url, ok]))).then((pairs) => {
+            if (!alive) return;
+            markServers(pairs);
+            if (pairs.every(([, ok]) => !ok)) toast("Tidak ada server yang bisa dijangkau", "err");
         });
         return () => {
             alive = false;
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [data]);
+    }, [list]);
 
     useEffect(() => {
         if (list.length && !current) play(rankServers(list, health)[0]);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [list.length, data]);
+    }, [list]);
 
     useEffect(() => {
         const video = videoRef.current;
@@ -297,7 +309,7 @@ export default function Watch({ type = "movie", id, params }) {
                             className="btn btn-primary"
                             onClick={() => {
                                 attempts.current = 0;
-                                list.forEach((s) => markServer(s.url, true));
+                                markServers(list.map((s) => [s.url, true]));
                                 play(list[0]);
                             }}
                         >
@@ -351,8 +363,13 @@ export default function Watch({ type = "movie", id, params }) {
                 </div>
             ) : null}
 
-            {data._src && data._src !== "net" ? <ErrorNote>Daftar server dari cache ({data._src})</ErrorNote> : null}
-            {data.directError ? <ErrorNote>Sumber langsung tidak tersedia: {data.directError}</ErrorNote> : null}
+            {data?._src && data._src !== "net" ? <ErrorNote>Daftar server dari cache ({data._src})</ErrorNote> : null}
+            {directQ.loading && !direct ? (
+                <p className="flex items-center gap-2 text-xs text-mist">
+                    <Spinner className="h-4 w-4" />Mencari sumber HD…
+                </p>
+            ) : null}
+            {directQ.data?.error ? <ErrorNote>Sumber langsung tidak tersedia: {directQ.data.error}</ErrorNote> : null}
 
             {type === "tv" ? (
                 <div className="flex flex-wrap items-center gap-2.5">

@@ -51,4 +51,10 @@ assert.equal(stale._cache, "stale");
 assert.equal(stale._err, "upstream down");
 assert.equal(await cached("t2", 60e3, flaky).then(() => "resolved", (e) => e.message), "upstream down", "no cached value -> real error");
 
-console.log("ok - playlist rewrite, proxy guard, stale cache");
+/* 4. a bare array from a producer would be spread into {"0":..} on the stale path
+      and come back as a silently empty list -- it must throw instead */
+const bad = await cached("arr", 60e3, async () => [1, 2]).then(() => "resolved", (e) => e.message);
+assert.match(bad, /must return an object/, "array producer must be rejected loudly");
+assert.match(await cached("prim", 60e3, async () => 7).then(() => "resolved", (e) => e.message), /must return an object/, "primitive producer rejected");
+
+console.log("ok - playlist rewrite, proxy guard, stale cache, cache contract");

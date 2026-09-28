@@ -8,7 +8,8 @@ const TTL = {
     search: 30 * 60e3,
     detail: 24 * 3600e3,
     episodes: 24 * 3600e3,
-    servers: 10 * 60e3
+    servers: 10 * 60e3,
+    direct: 10 * 60e3
 };
 
 const inflight = new Map();

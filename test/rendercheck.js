@@ -43,7 +43,8 @@ const ROUTES = {
     "/api/search": { query: "dune", page: 1, total: 1, results: [{ id: 5, title: "Dune", vote_average: 8, release_date: "2021-10-22", poster_path: "/p5.jpg" }] },
     "/api/detail": { id: 1, title: "Film Satu", originalTitle: "Film Satu", overview: "sinopsis", rating: 8.1, releaseDate: "2024-02-02", poster: "https://image.tmdb.org/t/p/w500/p.jpg", backdrop: "https://image.tmdb.org/t/p/w780/b.jpg", genres: [{ name: "Aksi" }], cast: [{ id: 9, name: "Aktor", character: "Tokoh", profile_path: "/c.jpg" }], crew: [{ id: 10, name: "Sutradara", job: "Director" }] },
     "/api/episodes": { episodes: [{ id: 11, episodeNumber: 1, name: "Awal", airDate: "2024-03-01", rating: 8.4, stillPath: "/s.jpg" }] },
-    "/api/servers": { embeds: [{ server: "Strigil", quality: "4K", url: "https://strigil.cc/embed/movie/1" }], direct: { label: "Direct HD", url: "/api/hls?u=x", quality: "Auto · HD" } }
+    "/api/servers": { embeds: [{ server: "Strigil", quality: "4K", url: "https://strigil.cc/embed/movie/1" }] },
+    "/api/direct": { direct: { label: "Direct HD", quality: "Auto · HD", url: "/api/hls?u=x" } }
 };
 /* seed the localStorage SWR cache so the first paint has data, exactly like a
    warm reload does */
@@ -54,7 +55,11 @@ seed("detail", "/api/detail?type=movie&id=1", ROUTES["/api/detail"]);
 seed("detail", "/api/detail?type=tv&id=2", { ...ROUTES["/api/detail"], id: 2, title: "Seri Dua" });
 seed("episodes", "/api/episodes?id=2&season=1", ROUTES["/api/episodes"]);
 seed("servers", "/api/servers?type=movie&id=1", ROUTES["/api/servers"]);
+seed("direct", "/api/direct?type=movie&id=1", ROUTES["/api/direct"]);
 seed("servers", "/api/servers?type=tv&id=2&s=1&e=2", ROUTES["/api/servers"]);
+seed("direct", "/api/direct?type=tv&id=2&s=1&e=2", ROUTES["/api/direct"]);
+seed("servers", "/api/servers?type=tv&id=2&s=1&e=1", { embeds: [{ server: "Default S1E1", quality: "HD", url: "https://strigil.cc/embed/tv/2/1/1" }] });
+seed("direct", "/api/direct?type=tv&id=2&s=1&e=1", ROUTES["/api/direct"]);
 
 globalThis.fetch = async (url) => {
     const body = ROUTES[String(url).split("?")[0]] || {};
@@ -92,7 +97,10 @@ const CASES = [
     ["#/detail/movie/1", ["Film Satu", "Aksi", "Sutradara"]],
     ["#/detail/tv/2?s=1", ["Seri Dua", "Pilih episode", "Season 1", "Awal"]],
     ["#/watch/movie/1", ["Strigil", "Direct HD"]],
-    ["#/watch/tv/2?s=1&e=2", ["Navigasi episode", "Berikutnya"]]
+    ["#/watch/tv/2?s=1&e=2", ["Navigasi episode", "Berikutnya"]],
+    /* a bare tv watch url must resolve s=1/e=1: the cache key below only exists
+       with those params, so seeing this server proves the default was applied */
+    ["#/watch/tv/2", ["Default S1E1"]]
 ];
 
 /* pass 1 warms the React.lazy modules, pass 2 asserts on real markup */

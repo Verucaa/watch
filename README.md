@@ -54,10 +54,13 @@ wrangler secret put HLS_HOSTS      # mis. "moon.quietridge.top,emberforge.site"
 | GET | `/api/search?q=&page=` | pencarian |
 | GET | `/api/detail?type=movie\|tv&id=` | detail, cast, kru |
 | GET | `/api/episodes?id=&season=` | episode satu season |
-| GET | `/api/servers?type=&id=&s=&e=` | daftar server + direct HLS |
+| GET | `/api/servers?type=&id=&s=&e=` | daftar server embed (cepat, ~1 dtk) |
+| GET | `/api/direct?type=&id=&s=&e=` | sumber HLS direct, ~3 dtk, dipanggil terpisah |
 | GET | `/api/hls?u=&r=` | proxy playlist `.m3u8` |
 
-`/api/*` hanya menerima GET/HEAD.
+`/api/*` hanya menerima GET/HEAD. Untuk series, `s`/`e` kosong otomatis jadi `1` — tanpa itu semua URL upstream rusak.
+
+`/api/direct` sengaja tidak digabung ke `/api/servers`: resolusi direct ~3 detik per player, dan di isolate yang baru-born total cold bisa 20+ detik. Dipisah, daftar embed muncul dalam ~1 detik dan direct hanya menambah satu server begitu tiba.
 
 ## Kenapa `/api/hls` ada
 
