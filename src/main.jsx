@@ -1,0 +1,18 @@
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App.jsx";
+import "./index.css";
+
+if (!location.hash) location.replace("#/home");
+
+createRoot(document.getElementById("root")).render(
+    <StrictMode>
+        <App />
+    </StrictMode>
+);
+
+if ("serviceWorker" in navigator) {
+    addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch(() => {});
+    });
+}

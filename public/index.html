@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>WATCH17</title>
+<meta name="description" content="WATCH17 - streaming film & series, multi server, auto failover.">
+<meta name="theme-color" content="#05070d">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="preconnect" href="https://cdn.veru.qzz.io" crossorigin>
+<link rel="preconnect" href="https://image.tmdb.org" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="https://cdn.veru.qzz.io/ZN6nvW.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="https://cdn.veru.qzz.io/Oud8aq.woff2" crossorigin>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<header class="nav">
+  <a class="brand" href="#/home" aria-label="WATCH17 beranda">WATCH<span>17</span></a>
+</header>
+
+<main id="view" class="view" tabindex="-1"></main>
+
+<nav class="dock" aria-label="Menu utama">
+  <a class="dock-btn" href="#/home" data-route="home">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+    <span>Home</span>
+  </a>
+  <a class="dock-btn" href="#/search" data-route="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 3a7.5 7.5 0 1 1-4.9 13.2l-3.1 3.1-1.4-1.4 3.1-3.1A7.5 7.5 0 0 1 10.5 3m0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11"/></svg>
+    <span>Cari</span>
+  </a>
+  <a class="dock-btn" href="#/trending" data-route="trending">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>
+    <span>Trending</span>
+  </a>
+  <a class="dock-btn" href="#/series" data-route="series">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1m2 3v2h2V8zm4 0v2h2V8zm4 0v2h2V8zM6 11v2h2v-2zm4 0v2h2v-2zm4 0v2h2v-2zm4 0v2h2v-2zM6 14v2h2v-2zm4 0v2h2v-2zm4 0v2h2v-2z"/></svg>
+    <span>Series</span>
+  </a>
+  <a class="dock-btn" href="#/list" data-route="list">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4-8 4V4a1 1 0 0 1 1-1m2 4v2h10V7zm0 4v2h10v-2z"/></svg>
+    <span>Daftar</span>
+  </a>
+</nav>
+
+<div id="loader" class="loader" hidden aria-live="polite" aria-busy="true">
+  <div class="loader-ring"><i></i><i></i><i></i></div>
+  <p id="loader-text">Memuat…</p>
+</div>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<div id="net" class="net" hidden>Offline — memakai cache</div>
+
+<script type="module" src="/js/main.js"></script>
+</body>
+</html>
